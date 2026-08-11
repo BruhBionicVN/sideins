@@ -10,40 +10,34 @@ workflows:
       events:
         - push
     scripts:
-      - name: Setup Compiler Environment
+      - name: Setup, Compile Core and Build IPA
         script: |
-          # Thiết lập cấu hình hệ thống đồng bộ toàn cục
+          # 1. Đóng đinh đường dẫn Xcode hệ thống để phục vụ build-rust và xcodebuild
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
+          export IPHONEOS_DEPLOYMENT_TARGET="26.0"
           
-          # Cài đặt công cụ tạo dự án
-          brew install xcodegen
-
-      - name: Build Rust Core to XCFramework
-        script: |
-          # Cài đặt Rust và toàn bộ các Target kiến trúc mà file build-rust.sh yêu cầu
+          # 2. Cài đặt hoàn chỉnh bộ công cụ Rust trực tiếp bằng script chính chủ
           curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
+          
+          # Ép hệ thống nhận diện lệnh Rust ngay lập tức trong phiên làm việc này
           export PATH="$HOME/.cargo/bin:$PATH"
+          
+          # Cài đặt đầy đủ 2 kiến trúc phần lõi yêu cầu
           rustup target add aarch64-apple-ios
           rustup target add aarch64-apple-ios-sim
           
-          # Ép file build-rust.sh phải sử dụng đúng bản Xcode 26.4 trên máy ảo, không dùng bản beta lỗi
-          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
-          export IPHONEOS_DEPLOYMENT_TARGET="26.0"
-          
+          # 3. Thực thi script biên dịch Rust của tác giả
           chmod +x build-rust.sh
           ./build-rust.sh
-
-      - name: Generate Xcode Project and Build IPA
-        script: |
-          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           
-          # Chạy XcodeGen để liên kết tệp vừa được tạo thành công vào project
+          # 4. Tạo dự án Xcode bằng XcodeGen
+          brew install xcodegen
           xcodegen generate
           
-          # Biên dịch chính thức dự án
+          # 5. Biên dịch ra ứng dụng dạng .app
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
-
+          
       - name: Package Application to IPA
         script: |
           mkdir -p Payload
