@@ -17,15 +17,15 @@ workflows:
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
           export IPHONEOS_DEPLOYMENT_TARGET="26.0"
           
-          # 2. Tải an toàn script Rustup về file cục bộ và thực thi cài đặt
-          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs -o rustup-init.sh
-          chmod +x rustup-init.sh
-          ./rustup-init.sh -y --default-toolchain stable
+          # 2. Cài đặt Rustup bằng cách tải trực tiếp script chạy độc lập vào bộ nhớ tạm
+          curl https://sh.rustup.rs -sSf > temp_rust_install.sh
+          chmod +x temp_rust_install.sh
+          ./temp_rust_install.sh -y --default-toolchain stable
           
-          # Cấu hình cứng đường dẫn PATH toàn cục cho phiên làm việc này
+          # Cấu hình nạp cứng đường dẫn PATH toàn cục cho phiên làm việc hiện tại
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Thêm các kiến trúc bắt buộc cho nền tảng iOS
+          # Thêm các kiến trúc nền tảng iOS bắt buộc
           rustup target add aarch64-apple-ios
           rustup target add aarch64-apple-ios-sim
           
