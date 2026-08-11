@@ -10,30 +10,28 @@ workflows:
       events:
         - push
     scripts:
-      - name: Install Complete Rust Toolchain
+      - name: Setup Environment and Compile Project
         script: |
-          # Sửa chính xác đường dẫn tải script cài đặt Rust trực tiếp
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          # 1. Định hình chính xác đường dẫn Xcode để tránh lỗi 'missing DEVELOPER_DIR' của Rust
+          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
+          sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
           
-          # Cấu hình biến môi trường cục bộ để hệ thống nhận diện lệnh ngay lập tức
+          # 2. Tải và cài đặt Rustup chính thức từ trang chủ
+          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
           export PATH="$HOME/.cargo/bin:$PATH"
-          
-          # Thêm mục tiêu biên dịch cho thiết bị iOS thật
           rustup target add aarch64-apple-ios
-      - name: Build Rust Core to XCFramework
-        script: |
-          # Kích hoạt lại biến môi trường cho phiên làm việc mới
-          export PATH="$HOME/.cargo/bin:$PATH"
           
+          # 3. Biên dịch lõi Rust thành XCFramework (Kèm theo biến đường dẫn Xcode)
           chmod +x build-rust.sh
           ./build-rust.sh
-      - name: Install XcodeGen and Generate Project
-        script: |
+          
+          # 4. Cài đặt và chạy XcodeGen để tạo file dự án
           brew install xcodegen
           xcodegen generate
-      - name: Build Xcode Project (Unsigned)
-        script: |
+          
+          # 5. Biên dịch ứng dụng bằng lệnh xcodebuild
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
+          
       - name: Package to IPA
         script: |
           mkdir -p Payload
