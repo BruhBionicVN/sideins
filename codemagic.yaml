@@ -12,18 +12,18 @@ workflows:
     scripts:
       - name: Install Complete Rust Toolchain
         script: |
-          # Tải và cài đặt Rustup chính thức từ trang chủ Rust
-          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
+          # Sửa chính xác đường dẫn tải script cài đặt Rust trực tiếp
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
           
-          # Kích hoạt môi trường Rust ngay trong phiên làm việc này
-          source "$HOME/.cargo/env"
+          # Cấu hình biến môi trường cục bộ để hệ thống nhận diện lệnh ngay lập tức
+          export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Thêm mục tiêu biên dịch cho kiến trúc thiết bị iOS thật
+          # Thêm mục tiêu biên dịch cho thiết bị iOS thật
           rustup target add aarch64-apple-ios
       - name: Build Rust Core to XCFramework
         script: |
-          # Gọi lại môi trường Rust để file build-rust.sh bên dưới sử dụng được
-          source "$HOME/.cargo/env"
+          # Kích hoạt lại biến môi trường cho phiên làm việc mới
+          export PATH="$HOME/.cargo/bin:$PATH"
           
           chmod +x build-rust.sh
           ./build-rust.sh
