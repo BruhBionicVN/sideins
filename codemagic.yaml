@@ -10,35 +10,29 @@ workflows:
       events:
         - push
     scripts:
-      - name: Setup Environment and Compile Project
+      - name: Setup Compiler Environment
         script: |
-          # 1. Định hình chính xác đường dẫn Xcode
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
-          
-          # 2. Tải và cài đặt Rustup chính thức từ trang chủ
           curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
+          brew install xcodegen
+
+      - name: Build Rust Core to XCFramework
+        script: |
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup target add aarch64-apple-ios
-          
-          # 3. Biên dịch lõi Rust thành XCFramework
           chmod +x build-rust.sh
           ./build-rust.sh
-          
-          # 4. Ép bản sao framework ra thư mục gốc bằng quyền quản trị cao nhất
-          sudo find . -name "SideInstallerFFI.xcframework" -type d -exec cp -R {} ./ \;
-          
-          # Kiểm tra xem file đã nằm ở thư mục gốc chưa để chắc chắn không lỗi
-          ls -ld SideInstallerFFI.xcframework || echo "Cảnh báo: Không tìm thấy framework ở thư mục gốc!"
-          
-          # 5. Cài đặt và chạy XcodeGen để tạo file dự án
-          brew install xcodegen
+          echo "=== Kiem tra thu muc goc sau khi build Rust ==="
+          ls -la
+
+      - name: Generate Xcode Project and Build IPA
+        script: |
+          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           xcodegen generate
-          
-          # 6. Biên dịch ứng dụng bằng lệnh xcodebuild
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
-          
-      - name: Package to IPA
+
+      - name: Package Application to IPA
         script: |
           mkdir -p Payload
           cp -R build/Release-iphoneos/SideInstaller.app Payload/ 2>/dev/null || cp -R ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/SideInstaller.app Payload/
