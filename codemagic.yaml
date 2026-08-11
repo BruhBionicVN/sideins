@@ -12,7 +12,7 @@ workflows:
     scripts:
       - name: Setup Environment and Compile Project
         script: |
-          # 1. Định hình chính xác đường dẫn Xcode để tránh lỗi 'missing DEVELOPER_DIR' của Rust
+          # 1. Định hình chính xác đường dẫn Xcode
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
           
@@ -21,15 +21,18 @@ workflows:
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup target add aarch64-apple-ios
           
-          # 3. Biên dịch lõi Rust thành XCFramework (Kèm theo biến đường dẫn Xcode)
+          # 3. Biên dịch lõi Rust thành XCFramework
           chmod +x build-rust.sh
           ./build-rust.sh
           
-          # 4. Cài đặt và chạy XcodeGen để tạo file dự án
+          # 4. Tìm kiếm và sao chép XCFramework ra thư mục gốc để XcodeGen nhìn thấy
+          find . -name "SideInstallerFFI.xcframework" -type d -exec cp -R {} ./ \;
+          
+          # 5. Cài đặt và chạy XcodeGen để tạo file dự án
           brew install xcodegen
           xcodegen generate
           
-          # 5. Biên dịch ứng dụng bằng lệnh xcodebuild
+          # 6. Biên dịch ứng dụng bằng lệnh xcodebuild
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
           
       - name: Package to IPA
