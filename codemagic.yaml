@@ -17,19 +17,28 @@ workflows:
           curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
           brew install xcodegen
 
-      - name: Build Rust Core to XCFramework
+      - name: Build Rust Core and Generate Project
         script: |
+          # 1. Kích hoạt môi trường Rust
           export PATH="$HOME/.cargo/bin:$PATH"
+          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           rustup target add aarch64-apple-ios
+          
+          # 2. Chạy lệnh build Rust gốc của tác giả
           chmod +x build-rust.sh
           ./build-rust.sh
-          echo "=== Kiem tra thu muc goc sau khi build Rust ==="
-          ls -la
+          
+          # 3. Ép tìm kiếm và di chuyển đích danh file xcframework ra thư mục chạy lệnh gốc
+          cp -R $(find . -name "SideInstallerFFI.xcframework" -type d | head -n 1) ./SideInstallerFFI.xcframework 2>/dev/null || true
+          
+          # 4. Chạy XcodeGen ngay tại đây để liên kết trực tiếp file framework vừa bốc ra
+          xcodegen generate
 
-      - name: Generate Xcode Project and Build IPA
+      - name: Build Xcode Project to IPA
         script: |
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
-          xcodegen generate
+          
+          # Thực hiện biên dịch chính thức bằng lệnh xcodebuild
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
 
       - name: Package Application to IPA
