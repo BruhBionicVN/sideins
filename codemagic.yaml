@@ -12,33 +12,36 @@ workflows:
     scripts:
       - name: Setup Compiler Environment
         script: |
+          # Thiết lập cấu hình hệ thống đồng bộ toàn cục
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
-          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
+          
+          # Cài đặt công cụ tạo dự án
           brew install xcodegen
 
-      - name: Build Rust Core and Generate Project
+      - name: Build Rust Core to XCFramework
         script: |
-          # 1. Kích hoạt môi trường Rust
+          # Cài đặt Rust và toàn bộ các Target kiến trúc mà file build-rust.sh yêu cầu
+          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
           export PATH="$HOME/.cargo/bin:$PATH"
-          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           rustup target add aarch64-apple-ios
+          rustup target add aarch64-apple-ios-sim
           
-          # 2. Chạy lệnh build Rust gốc của tác giả
+          # Ép file build-rust.sh phải sử dụng đúng bản Xcode 26.4 trên máy ảo, không dùng bản beta lỗi
+          export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
+          export IPHONEOS_DEPLOYMENT_TARGET="26.0"
+          
           chmod +x build-rust.sh
           ./build-rust.sh
-          
-          # 3. Ép tìm kiếm và di chuyển đích danh file xcframework ra thư mục chạy lệnh gốc
-          cp -R $(find . -name "SideInstallerFFI.xcframework" -type d | head -n 1) ./SideInstallerFFI.xcframework 2>/dev/null || true
-          
-          # 4. Chạy XcodeGen ngay tại đây để liên kết trực tiếp file framework vừa bốc ra
-          xcodegen generate
 
-      - name: Build Xcode Project to IPA
+      - name: Generate Xcode Project and Build IPA
         script: |
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           
-          # Thực hiện biên dịch chính thức bằng lệnh xcodebuild
+          # Chạy XcodeGen để liên kết tệp vừa được tạo thành công vào project
+          xcodegen generate
+          
+          # Biên dịch chính thức dự án
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
 
       - name: Package Application to IPA
