@@ -25,8 +25,11 @@ workflows:
           chmod +x build-rust.sh
           ./build-rust.sh
           
-          # 4. Tìm kiếm và sao chép XCFramework ra thư mục gốc để XcodeGen nhìn thấy
-          find . -name "SideInstallerFFI.xcframework" -type d -exec cp -R {} ./ \;
+          # 4. Ép bản sao framework ra thư mục gốc bằng quyền quản trị cao nhất
+          sudo find . -name "SideInstallerFFI.xcframework" -type d -exec cp -R {} ./ \;
+          
+          # Kiểm tra xem file đã nằm ở thư mục gốc chưa để chắc chắn không lỗi
+          ls -ld SideInstallerFFI.xcframework || echo "Cảnh báo: Không tìm thấy framework ở thư mục gốc!"
           
           # 5. Cài đặt và chạy XcodeGen để tạo file dự án
           brew install xcodegen
