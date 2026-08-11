@@ -10,15 +10,13 @@ workflows:
       events:
         - push
     scripts:
-      - name: Install Rust and Add iOS Targets
+      - name: Install Rust Environment
         script: |
-          # Cài đặt trực tiếp môi trường Rust toàn cục thông qua Homebrew
+          # Cài đặt trình biên dịch Rust chính chủ qua Homebrew
           brew install rust
-          # Thêm kiến trúc chip iOS cho trình biên dịch Rust
-          rustup target add aarch64-apple-ios
       - name: Build Rust Core to XCFramework
         script: |
-          # Chạy trực tiếp script build của dự án mà không cần gọi file env rườm rà
+          # Cấp quyền và chạy trực tiếp file script build gốc của tác giả
           chmod +x build-rust.sh
           ./build-rust.sh
       - name: Install XcodeGen and Generate Project
