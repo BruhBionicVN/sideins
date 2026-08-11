@@ -12,30 +12,38 @@ workflows:
     scripts:
       - name: Setup, Compile Core and Build IPA
         script: |
-          # 1. Đóng đinh đường dẫn Xcode hệ thống để phục vụ build-rust và xcodebuild
+          # 1. Đóng đinh đường dẫn Xcode hệ thống
           export DEVELOPER_DIR="/Applications/Xcode-26.4.app/Contents/Developer"
           sudo xcode-select -s /Applications/Xcode-26.4.app/Contents/Developer
           export IPHONEOS_DEPLOYMENT_TARGET="26.0"
           
-          # 2. Cài đặt hoàn chỉnh bộ công cụ Rust trực tiếp bằng script chính chủ
+          # 2. Cài đặt Rust và cấu hình PATH
           curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
-          
-          # Ép hệ thống nhận diện lệnh Rust ngay lập tức trong phiên làm việc này
           export PATH="$HOME/.cargo/bin:$PATH"
-          
-          # Cài đặt đầy đủ 2 kiến trúc phần lõi yêu cầu
           rustup target add aarch64-apple-ios
           rustup target add aarch64-apple-ios-sim
           
-          # 3. Thực thi script biên dịch Rust của tác giả
-          chmod +x build-rust.sh
-          ./build-rust.sh
+          # 3. Chỉ biên dịch thư viện tĩnh bằng Cargo (Bỏ qua file script đóng gói của tác giả)
+          cd rust-core
+          cargo build --release --target aarch64-apple-ios
+          cargo build --release --target aarch64-apple-ios-sim
+          cd ..
           
-          # 4. Tạo dự án Xcode bằng XcodeGen
+          # 4. Tự tạo XCFramework thủ công bằng quyền sudo trực tiếp tại thư mục gốc
+          rm -rf SideInstallerFFI.xcframework
+          sudo xcodebuild -create-xcframework \
+            -library rust-core/target/aarch64-apple-ios/release/libsideinstaller_ffi.a -headers rust-core/include \
+            -library rust-core/target/aarch64-apple-ios-sim/release/libsideinstaller_ffi.a -headers rust-core/include \
+            -output ./SideInstallerFFI.xcframework
+          
+          # Kiểm tra trực quan xem file đã xuất hiện chưa
+          ls -ld SideInstallerFFI.xcframework
+          
+          # 5. Cài đặt XcodeGen và tạo project
           brew install xcodegen
           xcodegen generate
           
-          # 5. Biên dịch ra ứng dụng dạng .app
+          # 6. Biên dịch ứng dụng chính thức
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
           
       - name: Package Application to IPA
