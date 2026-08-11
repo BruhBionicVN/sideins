@@ -1,0 +1,29 @@
+workflows:
+  sideinstaller-build:
+    name: Build SideInstaller Unsigned
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+    scripts:
+      - name: Install dependencies (if any)
+        script: |
+          # Nếu dự án có dùng CocoaPods, lệnh này sẽ cài đặt. Nếu không có sẽ tự bỏ qua.
+          if [ -f "Podfile" ]; then pod install; fi
+      - name: Build Xcode Project (Unsigned)
+        script: |
+          # Ép Xcode biên dịch ra bản Release cho máy thật (iphoneos) và tắt tính năng ký chứng chỉ số
+          xcodebuild -workspace *.xcworkspace -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO || xcodebuild -project *.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
+      - name: Package to IPA
+        script: |
+          # Gom file .app vừa build thành công cho vào thư mục Payload để đóng gói thành .ipa
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/SideInstaller.app Payload/ 2>/dev/null || cp -R ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/SideInstaller.app Payload/
+          zip -r SideInstaller.zip Payload
+          mv SideInstaller.zip SideInstaller_Unsigned.ipa
+    artifacts:
+      - SideInstaller_Unsigned.ipa
