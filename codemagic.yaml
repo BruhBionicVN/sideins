@@ -10,13 +10,21 @@ workflows:
       events:
         - push
     scripts:
-      - name: Install Rust Environment
+      - name: Install Complete Rust Toolchain
         script: |
-          # Cài đặt trình biên dịch Rust chính chủ qua Homebrew
-          brew install rust
+          # Tải và cài đặt Rustup chính thức từ trang chủ Rust
+          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y --default-toolchain stable
+          
+          # Kích hoạt môi trường Rust ngay trong phiên làm việc này
+          source "$HOME/.cargo/env"
+          
+          # Thêm mục tiêu biên dịch cho kiến trúc thiết bị iOS thật
+          rustup target add aarch64-apple-ios
       - name: Build Rust Core to XCFramework
         script: |
-          # Cấp quyền và chạy trực tiếp file script build gốc của tác giả
+          # Gọi lại môi trường Rust để file build-rust.sh bên dưới sử dụng được
+          source "$HOME/.cargo/env"
+          
           chmod +x build-rust.sh
           ./build-rust.sh
       - name: Install XcodeGen and Generate Project
