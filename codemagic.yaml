@@ -10,13 +10,21 @@ workflows:
       events:
         - push
     scripts:
+      - name: Install Rust and Add iOS Targets
+        script: |
+          # Kiểm tra và cài đặt các kiến trúc iOS cần thiết cho Rust
+          rustup target add aarch64-apple-ios
+      - name: Build Rust Core to XCFramework
+        script: |
+          # Chạy script gốc của tác giả để tự động build ra file SideInstallerFFI.xcframework
+          chmod +x build-rust.sh
+          ./build-rust.sh
       - name: Install XcodeGen and Generate Project
         script: |
           brew install xcodegen
           xcodegen generate
       - name: Build Xcode Project (Unsigned)
         script: |
-          # Đã sửa thành tên file chính xác SideInstaller.xcodeproj thay vì dùng dấu sao *
           xcodebuild -project SideInstaller.xcodeproj -scheme SideInstaller -configuration Release -sdk iphoneos clean build CODE_SIGNING_ALLOWED=NO
       - name: Package to IPA
         script: |
