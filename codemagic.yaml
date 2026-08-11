@@ -12,15 +12,13 @@ workflows:
     scripts:
       - name: Install Rust and Add iOS Targets
         script: |
-          # Tự động cài đặt Rust thông qua Homebrew có sẵn trên Mac
-          brew install rustup-init
-          rustup-init -y --no-modify-path
-          source $HOME/.cargo/env
+          # Cài đặt trực tiếp môi trường Rust toàn cục thông qua Homebrew
+          brew install rust
           # Thêm kiến trúc chip iOS cho trình biên dịch Rust
           rustup target add aarch64-apple-ios
       - name: Build Rust Core to XCFramework
         script: |
-          source $HOME/.cargo/env
+          # Chạy trực tiếp script build của dự án mà không cần gọi file env rườm rà
           chmod +x build-rust.sh
           ./build-rust.sh
       - name: Install XcodeGen and Generate Project
